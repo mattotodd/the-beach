@@ -1,0 +1,29 @@
+{
+	"xively": {
+		"services": {
+			"blueprint": {
+				"scheme":"https://",
+				"host":"blueprint.xively.com",
+				"port":80,
+				"apiRoot":"/api/v1/"
+			},
+			"idm": {
+				"scheme":"https://",
+				"host":"id.xively.com",
+				"port":80,
+				"apiRoot":"/api/v1/"
+			},
+			"timeseries":{
+				"scheme":"https://",
+				"host":"timeseries.xively.com",
+				"port":80,
+				"apiRoot":"/api/v4/data/"
+			}
+		}
+	},
+	"SeaglassGateway": {
+		"accountId":"c9832fa0-a0d3-490e-bcc0-4939d0815700",
+		"orgId":"b2c24a15-847b-44c0-b680-e8f3fbdcd1a1",
+		"deviceTemplateId":"8502d435-e37e-4b12-b663-cd3674f5f464"
+	}
+}

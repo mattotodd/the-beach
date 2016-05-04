@@ -3,18 +3,6 @@
   "description": "Manage seaglass devices",
   "repository": "https://github.com/mattotodd/the-beach",
   "logo": "http://node-js-sample.herokuapp.com/node.svg",
-  "keywords": [
-    "react",
-    "isomorphic",
-    "universal",
-    "webpack",
-    "express",
-    "hot reloading",
-    "react-hot-reloader",
-    "redux",
-    "starter",
-    "boilerplate",
-    "babel"
-  ],
-  "addons": ["mongolab"]
+  "keywords": [],
+  "addons": ["mongolab:sandbox"]
 }

@@ -11,6 +11,8 @@ import ApiClient from './helpers/ApiClient';
 import Html from './helpers/Html';
 import PrettyError from 'pretty-error';
 import http from 'http';
+import SocketIo from 'socket.io';
+import mongoose from 'mongoose';
 
 import { match } from 'react-router';
 import { ReduxAsyncConnect, loadOnServer } from 'redux-async-connect';
@@ -18,45 +20,65 @@ import createHistory from 'react-router/lib/createMemoryHistory';
 import {Provider} from 'react-redux';
 import getRoutes from './routes';
 
+import provisioner from '../api/provisioner';
+import {apiMiddleware} from '../api/api';
+
 const targetUrl = 'http://' + config.apiHost + ':' + config.apiPort;
 const pretty = new PrettyError();
 const app = new Express();
 const server = new http.Server(app);
+
+const io = new SocketIo(server);
+io.path('/ws');
+
 const proxy = httpProxy.createProxyServer({
   target: targetUrl,
   ws: true
 });
+
+var mongo_conn_str = process.env.MONGOLAB_URI || 'mongodb://localhost/thebeach';
+mongoose.connect(mongo_conn_str, function (err, res) {
+  if (err) { 
+    console.log ('ERROR connecting to: ' + mongo_conn_str + '. ' + err);
+  } else {
+    console.log ('Succeeded connected to: ' + mongo_conn_str);
+  }
+});
+
 
 app.use(compression());
 app.use(favicon(path.join(__dirname, '..', 'static', 'favicon.ico')));
 
 app.use(Express.static(path.join(__dirname, '..', 'static')));
 
-// Proxy to API server
-app.use('/api', (req, res) => {
-  proxy.web(req, res, {target: targetUrl});
-});
+app.use('/api', apiMiddleware);
 
-app.use('/ws', (req, res) => {
-  proxy.web(req, res, {target: targetUrl + '/ws'});
+app.use('/provisioner', provisioner);
+
+// ws
+io.on('connection', (socket) => {
+  socket.emit('news', {msg: `'Hello World!' from server`});
+
+  socket.on('history', () => {
+    for (let index = 0; index < bufferSize; index++) {
+      const msgNo = (messageIndex + index) % bufferSize;
+      const msg = messageBuffer[msgNo];
+      if (msg) {
+        socket.emit('msg', msg);
+      }
+    }
+  });
+
+  socket.on('msg', (data) => {
+    data.id = messageIndex;
+    messageBuffer[messageIndex % bufferSize] = data;
+    messageIndex++;
+    io.emit('msg', data);
+  });
 });
 
 server.on('upgrade', (req, socket, head) => {
   proxy.ws(req, socket, head);
-});
-
-// added the error handling to avoid https://github.com/nodejitsu/node-http-proxy/issues/527
-proxy.on('error', (error, req, res) => {
-  let json;
-  if (error.code !== 'ECONNRESET') {
-    console.error('proxy error', error);
-  }
-  if (!res.headersSent) {
-    res.writeHead(500, {'content-type': 'application/json'});
-  }
-
-  json = {error: 'proxy_error', reason: error.message};
-  res.end(JSON.stringify(json));
 });
 
 app.use((req, res) => {
@@ -113,7 +135,6 @@ if (config.port) {
     if (err) {
       console.error(err);
     }
-    console.info('----\n==> ✅  %s is running, talking to API server on %s.', config.app.title, config.apiPort);
     console.info('==> 💻  Open http://%s:%s in a browser to view the app.', config.host, config.port);
   });
 } else {
